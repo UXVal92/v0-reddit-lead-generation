@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useRouter } from "next/navigation"
 import { TrendChart } from "@/components/trend-chart"
+import { createClient } from "@/lib/supabase/client"
 
 interface RedditPost {
   id: string
@@ -203,6 +204,7 @@ The AI will analyze each post and provide:
 4. A professional reply draft positioning you as a financial adviser`
 
 export default function RedditLeadGenPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const [posts, setPosts] = useState<RedditPost[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -232,6 +234,25 @@ export default function RedditLeadGenPage() {
   const router = useRouter()
 
   useEffect(() => {
+    const checkAuth = async () => {
+      const supabase = createClient()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
+      if (!session) {
+        router.push("/auth/login")
+      } else {
+        setIsAuthenticated(true)
+      }
+    }
+
+    checkAuth()
+  }, [router])
+
+  useEffect(() => {
+    if (!isAuthenticated) return
+
     const fetchExistingPosts = async () => {
       try {
         setInitialLoading(true)
@@ -254,7 +275,7 @@ export default function RedditLeadGenPage() {
     }
 
     fetchExistingPosts()
-  }, [])
+  }, [isAuthenticated])
 
   const handleDeletePost = async (postId: string) => {
     setDeletingId(postId)
@@ -482,6 +503,21 @@ export default function RedditLeadGenPage() {
       setCollapsedSections((prev) => ({ ...prev, ...newCollapsedState }))
     }
   }, [posts])
+
+  if (isAuthenticated === null) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto mb-4" />
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return null
+  }
 
   return (
     <main className="min-h-screen bg-background">
