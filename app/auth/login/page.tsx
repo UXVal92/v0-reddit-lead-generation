@@ -38,13 +38,13 @@ export default function LoginPage() {
       }
 
       console.log("[v0] Login successful, session established")
+      console.log("[v0] Redirecting to homepage...")
 
       // Wait a brief moment for the session to be fully set
       await new Promise((resolve) => setTimeout(resolve, 100))
 
-      // Now redirect to homepage
-      router.push("/")
-      router.refresh()
+      // Use window.location for a hard redirect to ensure the session is available
+      window.location.href = "/"
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred")
     } finally {
