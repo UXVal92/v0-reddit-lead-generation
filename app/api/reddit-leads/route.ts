@@ -9,21 +9,9 @@ export async function GET() {
 
     const supabase = await createClient()
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      console.log("[v0] No authenticated user found")
-      return NextResponse.json({ posts: [] })
-    }
-
-    console.log("[v0] Fetching leads for user:", user.id)
-
     const { data: leads, error } = await supabase
       .from("reddit_leads")
       .select("*")
-      .eq("user_id", user.id)
       .order("reddit_created_at", { ascending: false })
 
     if (error) {
