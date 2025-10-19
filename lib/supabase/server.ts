@@ -4,30 +4,19 @@ import { cookies } from "next/headers"
 export async function createClient() {
   const cookieStore = await cookies()
 
-  const url =
-    process.env.SUPABASE_URL ||
-    process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    process.env.SUPABASE_SUPABASE_NEXT_PUBLIC_SUPABASE_URL
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
 
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SUPABASE_SERVICE_ROLE_KEY
-
-  const anonKey =
-    process.env.SUPABASE_ANON_KEY ||
-    process.env.SUPABASE_SUPABASE_SUPABASE_NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    process.env.SUPABASE_SUPABASE_ANON_KEY
-
-  const key = serviceRoleKey || anonKey
+  const anonKey = process.env.SUPABASE_NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
   console.log("[v0] Supabase client config:", {
-    hasServiceRoleKey: !!serviceRoleKey,
+    hasServiceRoleKey: false,
     hasAnonKey: !!anonKey,
-    usingServiceRole: !!serviceRoleKey,
-    keyPrefix: key?.substring(0, 20) + "...",
+    usingServiceRole: false,
+    keyPrefix: anonKey?.substring(0, 20) + "...",
   })
 
-  if (!url || !key) {
-    const error = `Missing Supabase credentials. URL: ${url ? "found" : "missing"}, Key: ${key ? "found" : "missing"}`
+  if (!url || !anonKey) {
+    const error = `Missing Supabase credentials. URL: ${url ? "found" : "missing"}, Key: ${anonKey ? "found" : "missing"}`
     console.error("[v0]", error)
     throw new Error(error)
   }
@@ -38,7 +27,7 @@ export async function createClient() {
     throw new Error(error)
   }
 
-  return createServerClient(url, key, {
+  return createServerClient(url, anonKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll()
@@ -47,7 +36,8 @@ export async function createClient() {
         try {
           cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
         } catch {
-          // Ignore errors from Server Components
+          // The "setAll" method was called from a Server Component.
+          // This can be ignored if you have middleware refreshing user sessions.
         }
       },
     },
