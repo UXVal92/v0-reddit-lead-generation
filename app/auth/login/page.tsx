@@ -25,11 +25,24 @@ export default function LoginPage() {
     setError(null)
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
+
       if (error) throw error
+
+      // Verify session was created
+      if (!data.session) {
+        throw new Error("Login succeeded but no session was created")
+      }
+
+      console.log("[v0] Login successful, session established")
+
+      // Wait a brief moment for the session to be fully set
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
+      // Now redirect to homepage
       router.push("/")
       router.refresh()
     } catch (error: unknown) {
