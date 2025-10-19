@@ -17,6 +17,8 @@ export async function createClient() {
   const cookieStore = await cookies()
 
   const allCookies = cookieStore.getAll()
+  console.log("[v0] All cookies:", allCookies.map((c) => c.name).join(", "))
+
   const authCookie = allCookies.find((cookie) => cookie.name.startsWith("sb-") && cookie.name.endsWith("-auth-token"))
 
   let accessToken: string | undefined
