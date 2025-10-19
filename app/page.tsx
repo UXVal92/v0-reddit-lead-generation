@@ -4,7 +4,18 @@ import { useState, useMemo, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, RefreshCw, ExternalLink, Filter, X, CalendarIcon, ChevronDown, ChevronUp, Trash2 } from "lucide-react"
+import {
+  Loader2,
+  RefreshCw,
+  ExternalLink,
+  Filter,
+  X,
+  CalendarIcon,
+  ChevronDown,
+  ChevronUp,
+  Trash2,
+  LogOut,
+} from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -229,6 +240,7 @@ export default function RedditLeadGenPage() {
   const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false)
   const [deleteAllConfirmation, setDeleteAllConfirmation] = useState("")
   const [postToDelete, setPostToDelete] = useState<string | null>(null)
+  const [loggingOut, setLoggingOut] = useState(false)
 
   const { toast } = useToast()
   const router = useRouter()
@@ -344,6 +356,32 @@ export default function RedditLeadGenPage() {
       setDeletingAll(false)
       setDeleteAllDialogOpen(false)
       setDeleteAllConfirmation("")
+    }
+  }
+
+  const handleLogout = async () => {
+    setLoggingOut(true)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.signOut()
+
+      if (error) throw error
+
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out.",
+      })
+
+      router.push("/auth/login")
+    } catch (error) {
+      console.error("[v0] Error logging out:", error)
+      toast({
+        title: "Logout failed",
+        description: "There was an error logging out. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoggingOut(false)
     }
   }
 
@@ -522,6 +560,28 @@ export default function RedditLeadGenPage() {
   return (
     <main className="min-h-screen bg-background">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mb-8 flex items-center justify-end">
+          <Button
+            onClick={handleLogout}
+            disabled={loggingOut}
+            variant="outline"
+            size="sm"
+            className="gap-2 bg-transparent"
+          >
+            {loggingOut ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Logging out...
+              </>
+            ) : (
+              <>
+                <LogOut className="h-4 w-4" />
+                Log Out
+              </>
+            )}
+          </Button>
+        </div>
+
         <div className="mb-12 text-center">
           <h1 className="mb-3 text-4xl font-bold tracking-tight text-foreground sm:text-5xl">Reddit Post Finder</h1>
           <p className="mx-auto max-w-2xl text-lg leading-relaxed text-muted-foreground">
