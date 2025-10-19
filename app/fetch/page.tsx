@@ -491,7 +491,6 @@ export default function FetchPage() {
 
             {fetchComplete ? (
               <div className="space-y-4">
-                <div className="text-sm text-muted-foreground">Successfully fetched and analyzed Reddit posts.</div>
                 <div className="rounded-lg border border-green-500/20 bg-green-500/10 p-4">
                   <div className="flex items-center gap-2 text-green-700 font-semibold mb-3">
                     <Check className="h-5 w-5" />
@@ -529,11 +528,11 @@ export default function FetchPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="text-sm text-muted-foreground">
-                  Processing your request. This may take a few minutes...
-                </div>
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+                <div className="text-center text-sm text-muted-foreground">
+                  Processing your request. This may take a few minutes...
                 </div>
               </div>
             )}

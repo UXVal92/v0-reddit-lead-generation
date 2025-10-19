@@ -9,11 +9,22 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL ||
     process.env.SUPABASE_SUPABASE_NEXT_PUBLIC_SUPABASE_URL
 
-  const key =
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SUPABASE_SERVICE_ROLE_KEY
+
+  const anonKey =
     process.env.SUPABASE_ANON_KEY ||
-    process.env.SUPABASE_NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    process.env.SUPABASE_NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_SUPABASE_SUPABASE_NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
     process.env.SUPABASE_SUPABASE_ANON_KEY
+
+  const key = serviceRoleKey || anonKey
+
+  console.log("[v0] Supabase client config:", {
+    hasServiceRoleKey: !!serviceRoleKey,
+    hasAnonKey: !!anonKey,
+    usingServiceRole: !!serviceRoleKey,
+    keyPrefix: key?.substring(0, 20) + "...",
+  })
 
   if (!url || !key) {
     const error = `Missing Supabase credentials. URL: ${url ? "found" : "missing"}, Key: ${key ? "found" : "missing"}`
