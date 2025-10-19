@@ -15,7 +15,23 @@ export async function createClient() {
   }
 
   const cookieStore = await cookies()
-  const authCookie = cookieStore.get("sb-access-token")
+
+  const allCookies = cookieStore.getAll()
+  const authCookie = allCookies.find((cookie) => cookie.name.startsWith("sb-") && cookie.name.endsWith("-auth-token"))
+
+  let accessToken: string | undefined
+
+  if (authCookie) {
+    try {
+      const authData = JSON.parse(authCookie.value)
+      accessToken = authData.access_token
+      console.log("[v0] Found auth token in cookies")
+    } catch (e) {
+      console.error("[v0] Failed to parse auth cookie:", e)
+    }
+  } else {
+    console.log("[v0] No auth cookie found")
+  }
 
   return createSupabaseClient(url, anonKey, {
     auth: {
@@ -24,9 +40,9 @@ export async function createClient() {
       detectSessionInUrl: false,
     },
     global: {
-      headers: authCookie
+      headers: accessToken
         ? {
-            Authorization: `Bearer ${authCookie.value}`,
+            Authorization: `Bearer ${accessToken}`,
           }
         : {},
     },
