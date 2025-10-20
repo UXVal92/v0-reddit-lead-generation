@@ -29,7 +29,6 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -1051,16 +1050,16 @@ export default function RedditLeadGenPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Post?</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <p>
+            <div className="text-sm text-muted-foreground space-y-2">
+              <div>
                 {postToDelete && posts.find((p) => p.id === postToDelete)?.title
                   ? `"${posts.find((p) => p.id === postToDelete)!.title.substring(0, 80)}${posts.find((p) => p.id === postToDelete)!.title.length > 80 ? "..." : ""}"`
                   : "This post"}
-              </p>
-              <p className="text-destructive font-medium">
+              </div>
+              <div className="text-destructive font-medium">
                 This will permanently remove this post from your database. This action cannot be undone.
-              </p>
-            </AlertDialogDescription>
+              </div>
+            </div>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -1079,19 +1078,19 @@ export default function RedditLeadGenPage() {
           <AlertDialogHeader>
             <AlertDialogTitle className="text-destructive">⚠️ Delete All Posts?</AlertDialogTitle>
             <div className="text-sm text-muted-foreground space-y-3">
-              <p className="font-semibold text-foreground">
+              <div className="font-semibold text-foreground">
                 You are about to permanently delete {posts.length} post{posts.length === 1 ? "" : "s"} from your
                 database.
-              </p>
+              </div>
               <div className="rounded-md bg-muted p-3 text-sm">
-                <p className="font-medium mb-1">This includes:</p>
+                <div className="font-medium mb-1">This includes:</div>
                 <ul className="list-disc list-inside space-y-0.5 text-muted-foreground">
                   <li>All post data and analysis</li>
                   <li>AI-generated summaries and opportunities</li>
                   <li>Draft replies</li>
                 </ul>
               </div>
-              <p className="text-destructive font-medium">This action cannot be undone and cannot be recovered.</p>
+              <div className="text-destructive font-medium">This action cannot be undone and cannot be recovered.</div>
               <div className="space-y-2">
                 <Label htmlFor="delete-confirmation" className="text-foreground">
                   Type <span className="font-mono font-bold">DELETE</span> to confirm:
