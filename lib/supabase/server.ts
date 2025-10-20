@@ -1,44 +1,73 @@
-import { createServerClient } from "@supabase/ssr"
+import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 import { cookies } from "next/headers"
 
 export async function createClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_SUPABASE_NEXT_PUBLIC_SUPABASE_URL
+  const anonKey =
+    process.env.SUPABASE_NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_SUPABASE_NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!url || !anonKey) {
+    const error = `Missing Supabase credentials. URL: ${url ? "found" : "missing"}, Key: ${anonKey ? "found" : "missing"}`
+    console.error("[v0]", error)
+    throw new Error(error)
+  }
+
   const cookieStore = await cookies()
 
-  const url =
-    process.env.SUPABASE_URL ||
-    process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    process.env.SUPABASE_SUPABASE_NEXT_PUBLIC_SUPABASE_URL
+  const allCookies = cookieStore.getAll()
+  console.log("[v0] All cookies:", allCookies.map((c) => c.name).join(", "))
 
-  const key =
-    process.env.SUPABASE_ANON_KEY ||
-    process.env.SUPABASE_NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    process.env.SUPABASE_NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    process.env.SUPABASE_SUPABASE_ANON_KEY
+  const authCookie = allCookies.find((cookie) => cookie.name.startsWith("sb-") && cookie.name.endsWith("-auth-token"))
 
-  if (!url || !key) {
-    const error = `Missing Supabase credentials. URL: ${url ? "found" : "missing"}, Key: ${key ? "found" : "missing"}`
+  let accessToken: string | undefined
+
+  if (authCookie) {
+    try {
+      const authData = JSON.parse(authCookie.value)
+      accessToken = authData.access_token
+      console.log("[v0] Found auth token in cookies")
+    } catch (e) {
+      console.error("[v0] Failed to parse auth cookie:", e)
+    }
+  } else {
+    console.log("[v0] No auth cookie found")
+  }
+
+  return createSupabaseClient(url, anonKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+    global: {
+      headers: accessToken
+        ? {
+            Authorization: `Bearer ${accessToken}`,
+          }
+        : {},
+    },
+  })
+}
+
+export function createServiceRoleClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_SUPABASE_NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SUPABASE_SERVICE_ROLE_KEY
+
+  if (!url || !serviceRoleKey) {
+    const error = `Missing Supabase service role credentials. URL: ${url ? "found" : "missing"}, Service Role Key: ${serviceRoleKey ? "found" : "missing"}`
     console.error("[v0]", error)
     throw new Error(error)
   }
 
-  if (!url.startsWith("http://") && !url.startsWith("https://")) {
-    const error = `Invalid Supabase URL format: ${url.substring(0, 30)}... (must start with http:// or https://)`
-    console.error("[v0]", error)
-    throw new Error(error)
-  }
+  console.log("[v0] Creating service role client (bypasses RLS)")
 
-  return createServerClient(url, key, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll()
-      },
-      setAll(cookiesToSet) {
-        try {
-          cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-        } catch {
-          // Ignore errors from Server Components
-        }
-      },
+  return createSupabaseClient(url, serviceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
     },
   })
 }

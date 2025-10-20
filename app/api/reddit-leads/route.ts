@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createServiceRoleClient } from "@/lib/supabase/server"
 
 export const runtime = "nodejs"
 
@@ -7,7 +7,7 @@ export async function GET() {
   try {
     console.log("[v0] Fetching existing leads from database...")
 
-    const supabase = await createClient()
+    const supabase = createServiceRoleClient()
 
     const { data: leads, error } = await supabase
       .from("reddit_leads")
@@ -28,7 +28,7 @@ export async function GET() {
       url: lead.url,
       summary: lead.summary,
       score: lead.score,
-      opportunity: lead.opportunity, // Added opportunity field
+      opportunity: lead.opportunity,
       draftReply: lead.draft_reply,
       timestamp: lead.reddit_created_at,
     }))
@@ -51,7 +51,7 @@ export async function DELETE() {
   try {
     console.log("[v0] Deleting all leads from database...")
 
-    const supabase = await createClient()
+    const supabase = createServiceRoleClient()
 
     const { error } = await supabase.from("reddit_leads").delete().gte("created_at", "1970-01-01")
 

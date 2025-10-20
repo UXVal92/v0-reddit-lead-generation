@@ -4,7 +4,18 @@ import { useState, useMemo, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, RefreshCw, ExternalLink, Filter, X, CalendarIcon, ChevronDown, ChevronUp, Trash2 } from "lucide-react"
+import {
+  Loader2,
+  RefreshCw,
+  ExternalLink,
+  Filter,
+  X,
+  CalendarIcon,
+  ChevronDown,
+  ChevronUp,
+  Trash2,
+  LogOut,
+} from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -18,13 +29,13 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useRouter } from "next/navigation"
 import { TrendChart } from "@/components/trend-chart"
+import { createClient } from "@/lib/supabase/client"
 
 interface RedditPost {
   id: string
@@ -203,6 +214,7 @@ The AI will analyze each post and provide:
 4. A professional reply draft positioning you as a financial adviser`
 
 export default function RedditLeadGenPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const [posts, setPosts] = useState<RedditPost[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -227,11 +239,31 @@ export default function RedditLeadGenPage() {
   const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false)
   const [deleteAllConfirmation, setDeleteAllConfirmation] = useState("")
   const [postToDelete, setPostToDelete] = useState<string | null>(null)
+  const [loggingOut, setLoggingOut] = useState(false)
 
   const { toast } = useToast()
   const router = useRouter()
 
   useEffect(() => {
+    const checkAuth = async () => {
+      const supabase = createClient()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
+      if (!session) {
+        router.push("/auth/login")
+      } else {
+        setIsAuthenticated(true)
+      }
+    }
+
+    checkAuth()
+  }, [router])
+
+  useEffect(() => {
+    if (!isAuthenticated) return
+
     const fetchExistingPosts = async () => {
       try {
         setInitialLoading(true)
@@ -254,7 +286,7 @@ export default function RedditLeadGenPage() {
     }
 
     fetchExistingPosts()
-  }, [])
+  }, [isAuthenticated])
 
   const handleDeletePost = async (postId: string) => {
     setDeletingId(postId)
@@ -323,6 +355,32 @@ export default function RedditLeadGenPage() {
       setDeletingAll(false)
       setDeleteAllDialogOpen(false)
       setDeleteAllConfirmation("")
+    }
+  }
+
+  const handleLogout = async () => {
+    setLoggingOut(true)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.signOut()
+
+      if (error) throw error
+
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out.",
+      })
+
+      router.push("/auth/login")
+    } catch (error) {
+      console.error("[v0] Error logging out:", error)
+      toast({
+        title: "Logout failed",
+        description: "There was an error logging out. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoggingOut(false)
     }
   }
 
@@ -483,9 +541,46 @@ export default function RedditLeadGenPage() {
     }
   }, [posts])
 
+  if (isAuthenticated === null) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto mb-4" />
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return null
+  }
+
   return (
     <main className="min-h-screen bg-background">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mb-8 flex items-center justify-end">
+          <Button
+            onClick={handleLogout}
+            disabled={loggingOut}
+            variant="outline"
+            size="sm"
+            className="gap-2 bg-transparent"
+          >
+            {loggingOut ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Logging out...
+              </>
+            ) : (
+              <>
+                <LogOut className="h-4 w-4" />
+                Log Out
+              </>
+            )}
+          </Button>
+        </div>
+
         <div className="mb-12 text-center">
           <h1 className="mb-3 text-4xl font-bold tracking-tight text-foreground sm:text-5xl">Reddit Post Finder</h1>
           <p className="mx-auto max-w-2xl text-lg leading-relaxed text-muted-foreground">
@@ -955,16 +1050,16 @@ export default function RedditLeadGenPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Post?</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <p>
+            <div className="text-sm text-muted-foreground space-y-2">
+              <div>
                 {postToDelete && posts.find((p) => p.id === postToDelete)?.title
                   ? `"${posts.find((p) => p.id === postToDelete)!.title.substring(0, 80)}${posts.find((p) => p.id === postToDelete)!.title.length > 80 ? "..." : ""}"`
                   : "This post"}
-              </p>
-              <p className="text-destructive font-medium">
+              </div>
+              <div className="text-destructive font-medium">
                 This will permanently remove this post from your database. This action cannot be undone.
-              </p>
-            </AlertDialogDescription>
+              </div>
+            </div>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -983,19 +1078,19 @@ export default function RedditLeadGenPage() {
           <AlertDialogHeader>
             <AlertDialogTitle className="text-destructive">⚠️ Delete All Posts?</AlertDialogTitle>
             <div className="text-sm text-muted-foreground space-y-3">
-              <p className="font-semibold text-foreground">
+              <div className="font-semibold text-foreground">
                 You are about to permanently delete {posts.length} post{posts.length === 1 ? "" : "s"} from your
                 database.
-              </p>
+              </div>
               <div className="rounded-md bg-muted p-3 text-sm">
-                <p className="font-medium mb-1">This includes:</p>
+                <div className="font-medium mb-1">This includes:</div>
                 <ul className="list-disc list-inside space-y-0.5 text-muted-foreground">
                   <li>All post data and analysis</li>
                   <li>AI-generated summaries and opportunities</li>
                   <li>Draft replies</li>
                 </ul>
               </div>
-              <p className="text-destructive font-medium">This action cannot be undone and cannot be recovered.</p>
+              <div className="text-destructive font-medium">This action cannot be undone and cannot be recovered.</div>
               <div className="space-y-2">
                 <Label htmlFor="delete-confirmation" className="text-foreground">
                   Type <span className="font-mono font-bold">DELETE</span> to confirm:
