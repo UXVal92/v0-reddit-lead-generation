@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { createServiceRoleClient } from "@/lib/supabase/server"
 
 export const runtime = "nodejs"
 
@@ -196,7 +196,7 @@ export async function POST(request: Request) {
           return
         }
 
-        const supabase = await createClient()
+        const supabase = createServiceRoleClient()
 
         console.log("[v0] Getting Reddit OAuth token...")
         sendProgress(controller, "Authenticating with Reddit...", 5)
